@@ -6,7 +6,8 @@
 #include "eEVM/simple/simpleglobalstate.h"
 #include "eEVM/util.h"
 
-#include <fmt/format_header_only.h>
+#define FMT_HEADER_ONLY
+#include <fmt/format.h>
 #include <iostream>
 
 int usage(const char* bin_name)

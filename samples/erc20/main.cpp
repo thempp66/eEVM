@@ -6,7 +6,8 @@
 #include "eEVM/simple/simpleglobalstate.h"
 
 #include <cassert>
-#include <fmt/format_header_only.h>
+#define FMT_HEADER_ONLY
+#include <fmt/format.h>
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>

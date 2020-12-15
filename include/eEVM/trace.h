@@ -6,7 +6,8 @@
 #include "opcode.h"
 #include "stack.h"
 
-#include <fmt/format_header_only.h>
+#define FMT_HEADER_ONLY
+#include <fmt/format.h>
 #include <iostream>
 #include <memory>
 #include <utility>

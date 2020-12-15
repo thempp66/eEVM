@@ -9,7 +9,8 @@ extern "C"
 }
 #include "address.h"
 
-#include <fmt/format_header_only.h>
+#define FMT_HEADER_ONLY
+#include <fmt/format.h>
 #include <iomanip>
 #include <limits>
 #include <nlohmann/json.hpp>
