@@ -82,6 +82,15 @@ namespace eevm
     st.push_front(st[a]);
   }
 
+  uint256_t Stack::at(uint64_t i)
+  {
+    if (i >= st.size())
+      return 0;
+
+    uint256_t val = st.at(i);
+    return val;
+  }
+
   std::ostream& operator<<(std::ostream& os, const Stack& s)
   {
     int i = 0;

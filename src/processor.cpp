@@ -164,6 +164,8 @@ namespace eevm
     vector<unique_ptr<Context>> ctxts;
     /// pointer to the current context
     Context* ctxt;
+    /// recorder of state before executing command sha3()
+    map<uint256_t, HashState> hash_states;
 
     using ET = Exception::Type;
 
@@ -1005,9 +1007,30 @@ namespace eevm
     {
       const auto k = ctxt->s.pop();
       const auto v = ctxt->s.pop();
+      ostringstream os;
+      bool exist = false;
+      uint256_t exist_key;
       if (!v)
         ctxt->st.remove(k);
       else
+        for (auto it = hash_states.begin(); it != hash_states.end(); it++) 
+        {
+          os << it->first << "|";
+          if (k.hi == it->first.hi) 
+          {
+            exist = true;
+            exist_key = it->first;
+          }
+        }
+        cout << "sstore,k=" << k << ",v=" << v << ",exist=" << exist << ",mapSize=" << hash_states.size() << ",os=" << os.str() << endl;
+
+        if (exist) 
+        {
+          map<uint256_t, HashState> new_hash_states;
+          new_hash_states[k] = hash_states[exist_key];
+          new_hash_states[k].addr = k;
+          ctxt->st.store_runtime_state(new_hash_states[k], v);
+        }
         ctxt->st.store(k, v);
     }
 
@@ -1190,7 +1213,34 @@ namespace eevm
 
       uint8_t h[32];
       keccak_256(ctxt->mem.data() + offset, static_cast<unsigned int>(size), h);
-      ctxt->s.push(from_big_endian(h, sizeof(h)));
+
+      uint8_t memLow32[32];
+      memcpy(memLow32, ctxt->mem.data() + offset, 32);
+      uint8_t memHigh32[32];
+      memcpy(memHigh32, ctxt->mem.data() + offset + 32, 32);
+      cout << "sha3,offset=" << offset << ",size=" << size 
+      << ",memlow32=" << from_big_endian(memLow32, sizeof(memLow32))
+      << ",memhigh32=" << from_big_endian(memHigh32, sizeof(memHigh32)) 
+      << ",hash=" << from_big_endian(h, sizeof(h))
+      << endl; 
+
+      auto hash = from_big_endian(h, sizeof(h));
+      HashState hash_State;
+      hash_State.mem_low_32 = from_big_endian(memLow32, sizeof(memLow32));
+      hash_State.mem_high_32 = from_big_endian(memHigh32, sizeof(memHigh32));
+      hash_State.stack_0 = ctxt->s.at(0);
+      hash_State.stack_1 = ctxt->s.at(1);
+      hash_State.stack_2 = ctxt->s.at(2);
+      hash_State.stack_3 = ctxt->s.at(3);
+      hash_State.addr = hash;
+      hash_State.var_type = (size == 64 ? 1 : 2);
+      hash_states[hash] = hash_State;
+      ostringstream os;
+      for (auto it = hash_states.begin(); it != hash_states.end(); it++) {
+          os << it->first << "|";
+        }
+      cout << "tomap,addr=" << hash_states[hash].addr << ",exist=" << (hash_states.find(hash) != hash_states.end()) << ",os=" << os.str() << endl;
+      ctxt->s.push(hash);
     }
 
     void return_()
