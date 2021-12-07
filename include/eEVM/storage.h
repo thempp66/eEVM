@@ -17,6 +17,16 @@ namespace eevm
     uint256_t addr;
     int var_type;
   };
+  struct VarInfo{
+    int var_type;
+    uint256_t addr;
+    uint256_t key;
+    uint256_t value;
+    uint256_t slot;
+  };
+
+  // recorder of state before executing command sha3()
+  inline std::map<uint256_t, HashState> hash_states{};
 
   /**
    * Abstract interface for accessing EVM's permanent, per-address key-value
@@ -24,10 +34,9 @@ namespace eevm
    */
   struct Storage
   {
-    virtual void store(const uint256_t& key, const uint256_t& value) = 0;
-    virtual uint256_t load(const uint256_t& key) = 0;
+    virtual void store(const uint256_t& key, const uint256_t& value, const std::string& mpt_id) = 0;
+    virtual uint256_t load(const uint256_t& key, const std::string& mpt_id) = 0;
     virtual bool remove(const uint256_t& key) = 0;
-    virtual bool store_runtime_state(const HashState& hash_state, const uint256_t& value) = 0;
     virtual ~Storage() {}
   };
 } // namespace eevm

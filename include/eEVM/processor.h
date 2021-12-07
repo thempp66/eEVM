@@ -59,6 +59,7 @@ namespace eevm
       AccountState callee,
       const std::vector<uint8_t>& input,
       const uint256_t& call_value,
+      const std::string& mpt_id = "",
       Trace* tr = nullptr);
   };
 } // namespace eevm
