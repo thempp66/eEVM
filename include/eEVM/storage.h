@@ -7,6 +7,12 @@
 
 namespace eevm
 {
+  enum VarType {
+    kMapping = 1,
+    kArray = 2,
+    kStatic = 3
+  };
+
   struct HashState {
     uint256_t mem_low_32;
     uint256_t mem_high_32;
@@ -15,10 +21,10 @@ namespace eevm
     uint256_t stack_2;
     uint256_t stack_3;
     uint256_t addr;
-    int var_type;
+    VarType var_type;
   };
   struct VarInfo{
-    int var_type;
+    VarType var_type;
     uint256_t addr;
     uint256_t key;
     uint256_t value;

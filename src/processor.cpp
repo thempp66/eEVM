@@ -1208,7 +1208,7 @@ namespace eevm
       hash_State.stack_2 = ctxt->s.at(2);
       hash_State.stack_3 = ctxt->s.at(3);
       hash_State.addr = hash;
-      hash_State.var_type = (size == 64 ? 1 : 2);
+      hash_State.var_type = (size == 64 ? VarType::kMapping : VarType::kArray);
       hash_states[hash] = hash_State;
       ctxt->s.push(hash);
     }
