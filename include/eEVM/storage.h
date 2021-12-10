@@ -4,7 +4,7 @@
 #pragma once
 
 #include "bigint.h"
-
+#include "ds/json.h"
 namespace eevm
 {
   enum VarType {
@@ -12,6 +12,10 @@ namespace eevm
     kArray = 2,
     kStatic = 3
   };
+  DECLARE_JSON_ENUM(VarType,
+   {{VarType::kMapping, "kMapping"},
+   {VarType::kArray, "kArray"},
+   {VarType::kStatic, "kStatic"}})
 
   struct HashState {
     uint256_t mem_low_32;
@@ -30,6 +34,9 @@ namespace eevm
     uint256_t value;
     uint256_t slot;
   };
+  DECLARE_JSON_TYPE(VarInfo)
+  DECLARE_JSON_REQUIRED_FIELDS(VarInfo, var_type, addr, key, value)
+
 
   // recorder of state before executing command sha3()
   inline std::map<uint256_t, HashState> hash_states{};
@@ -40,7 +47,8 @@ namespace eevm
    */
   struct Storage
   {
-    virtual void store(const uint256_t& key, const uint256_t& value, const std::string& mpt_id) = 0;
+    virtual void store(const uint256_t& key, const uint256_t& value,
+     const std::string& mpt_id) = 0;
     virtual uint256_t load(const uint256_t& key, const std::string& mpt_id) = 0;
     virtual bool remove(const uint256_t& key) = 0;
     virtual ~Storage() {}
