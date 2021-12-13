@@ -10,7 +10,7 @@ namespace eevm
   enum VarType {
     kMapping = 1,
     kArray = 2,
-    kStatic = 3
+    kStatic = 3,
   };
   DECLARE_JSON_ENUM(VarType,
    {{VarType::kMapping, "kMapping"},
@@ -27,6 +27,9 @@ namespace eevm
     uint256_t addr;
     VarType var_type;
   };
+  DECLARE_JSON_TYPE(HashState)
+  DECLARE_JSON_REQUIRED_FIELDS(HashState, 
+    mem_low_32, mem_high_32, stack_0, stack_1, stack_2, stack_3, addr, var_type)
   struct VarInfo{
     VarType var_type;
     uint256_t addr;
@@ -35,11 +38,7 @@ namespace eevm
     uint256_t slot;
   };
   DECLARE_JSON_TYPE(VarInfo)
-  DECLARE_JSON_REQUIRED_FIELDS(VarInfo, var_type, addr, key, value)
-
-
-  // recorder of state before executing command sha3()
-  inline std::map<uint256_t, HashState> hash_states{};
+  DECLARE_JSON_REQUIRED_FIELDS(VarInfo, var_type, addr, key, value, slot)
 
   /**
    * Abstract interface for accessing EVM's permanent, per-address key-value
@@ -51,6 +50,10 @@ namespace eevm
      const std::string& mpt_id) = 0;
     virtual uint256_t load(const uint256_t& key, const std::string& mpt_id) = 0;
     virtual bool remove(const uint256_t& key) = 0;
+    virtual void set_sstore_kv(const std::string& mpt_id,
+     const uint256_t& key, const VarInfo& var_info) = 0;
+    virtual void set_reference_kv(const std::string& mpt_id,
+     const uint256_t& key, const VarInfo& var_info) = 0;
     virtual ~Storage() {}
   };
 } // namespace eevm

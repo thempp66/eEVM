@@ -166,6 +166,8 @@ namespace eevm
     Context* ctxt;
     /// mpt_id
     std::string mpt_id;
+    /// recorder of state after sha3
+    std::map<uint256_t, HashState> hash_states;
 
     using ET = Exception::Type;
 
@@ -1001,6 +1003,17 @@ namespace eevm
     void sload()
     {
       const auto k = ctxt->s.pop();
+      HashState hash_state;
+        VarInfo var_info;
+        bool exist = get_hash_state(k, hash_state);
+        if (exist) {
+            // dynamic type
+            hash_state_to_var_info(hash_state, var_info);
+        } else {
+            // non-dynamic type
+            static_type_to_var_info(k, var_info);
+        }
+        ctxt->st.set_reference_kv(mpt_id, k, var_info);
       ctxt->s.push(ctxt->st.load(k, mpt_id));
     }
     
@@ -1011,8 +1024,43 @@ namespace eevm
       if (!v)
         ctxt->st.remove(k);
       else
+      {
+        HashState hash_state;
+        VarInfo var_info;
+        bool exist = get_hash_state(k, hash_state);
+        if (exist) {
+            // dynamic type
+            hash_state_to_var_info(hash_state, var_info);
+        } else {
+            // non-dynamic type
+            static_type_to_var_info(k, var_info);
+        }
+        var_info.value = v;
+        ctxt->st.set_reference_kv(mpt_id, k, var_info);
+        ctxt->st.set_sstore_kv(mpt_id, k, var_info);
         ctxt->st.store(k, v, mpt_id);
+      }
     }
+
+    void hash_state_to_var_info(const HashState& hash_state, VarInfo& var_info) {
+        assert(hash_state.var_type == VarType::kMapping || hash_state.var_type == VarType::kArray ||
+               hash_state.var_type == VarType::kStatic);
+        var_info.var_type = hash_state.var_type;
+        var_info.addr = hash_state.addr;
+        if (hash_state.var_type == VarType::kMapping) {
+            var_info.key = hash_state.mem_low_32;
+            var_info.slot = hash_state.mem_high_32;
+        } else if (hash_state.var_type == VarType::kArray) {
+            var_info.slot = hash_state.mem_low_32;
+        }
+    }
+
+    void static_type_to_var_info(const uint256_t& key, VarInfo& var_info) {
+        var_info.var_type = VarType::kStatic;
+        var_info.slot = key;
+        var_info.addr = key;
+    }
+
 
     void codecopy()
     {
@@ -1190,27 +1238,49 @@ namespace eevm
       const auto offset = ctxt->s.pop64();
       const auto size = ctxt->s.pop64();
       prepare_mem_access(offset, size);
-
       uint8_t h[32];
       keccak_256(ctxt->mem.data() + offset, static_cast<unsigned int>(size), h);
+      set_hash_state(offset, size);
+      ctxt->s.push(from_big_endian(h, sizeof(h)));
+    }
 
+    bool get_hash_state(const uint256_t& key, HashState& hash_state) {
+        bool exist = false;
+        uint256_t exist_key;
+        for (auto& [k, v] : hash_states) {
+            if (key.hi == k.hi) {
+                exist = true;
+                exist_key = k;
+            }
+        }
+        if (exist) {
+            hash_states[key] = hash_states[exist_key];
+            hash_states[key].addr = key;
+            hash_state = hash_states[key];
+            return true;
+        }
+        return false;
+    }
+
+    void set_hash_state(const uint64_t& offset, const uint64_t size) {
+      uint8_t h[32];
+      keccak_256(ctxt->mem.data() + offset, static_cast<unsigned int>(size), h);
       uint8_t memLow32[32];
       memcpy(memLow32, ctxt->mem.data() + offset, 32);
       uint8_t memHigh32[32];
       memcpy(memHigh32, ctxt->mem.data() + offset + 32, 32);
-
-      auto hash = from_big_endian(h, sizeof(h));
-      HashState hash_State;
-      hash_State.mem_low_32 = from_big_endian(memLow32, sizeof(memLow32));
-      hash_State.mem_high_32 = from_big_endian(memHigh32, sizeof(memHigh32));
-      hash_State.stack_0 = ctxt->s.at(0);
-      hash_State.stack_1 = ctxt->s.at(1);
-      hash_State.stack_2 = ctxt->s.at(2);
-      hash_State.stack_3 = ctxt->s.at(3);
-      hash_State.addr = hash;
-      hash_State.var_type = (size == 64 ? VarType::kMapping : VarType::kArray);
-      hash_states[hash] = hash_State;
-      ctxt->s.push(hash);
+      uint256_t hash = from_big_endian(h, sizeof(h));
+      HashState hash_state;
+      hash_state.mem_low_32 = from_big_endian(memLow32, sizeof(memLow32));
+      hash_state.mem_high_32 = from_big_endian(memHigh32, sizeof(memHigh32));
+      hash_state.stack_0 = ctxt->s.at(0);
+      hash_state.stack_1 = ctxt->s.at(1);
+      hash_state.stack_2 = ctxt->s.at(2);
+      hash_state.stack_3 = ctxt->s.at(3);
+      hash_state.addr = hash;
+      hash_state.var_type = (size == 64 ? VarType::kMapping : VarType::kArray);
+      hash_states[hash] = hash_state;
+      //ctxt->st.set_hash_state_kv(mpt_id, hash_state);
     }
 
     void return_()
