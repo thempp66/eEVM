@@ -60,6 +60,7 @@ namespace eevm
       const std::vector<uint8_t>& input,
       const uint256_t& call_value,
       const std::string& mpt_id = "",
+      const std::map<int, std::string>& slot_mapping = std::map<int, std::string>{},
       Trace* tr = nullptr);
   };
 } // namespace eevm

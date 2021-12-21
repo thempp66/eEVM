@@ -166,17 +166,21 @@ namespace eevm
     Context* ctxt;
     /// mpt_id
     std::string mpt_id;
+    /// slot_mapping
+    std::map<int, std::string> slot_mapping;
     /// recorder of state after sha3
     std::map<uint256_t, HashState> hash_states;
 
     using ET = Exception::Type;
 
   public:
-    _Processor(GlobalState& gs, Transaction& tx, Trace* tr, const std::string& mpt_id) :
+    _Processor(GlobalState& gs, Transaction& tx, Trace* tr,
+     const std::string& mpt_id, const std::map<int, std::string>& slot_mapping) :
       gs(gs),
       tx(tx),
       tr(tr),
-      mpt_id(mpt_id)
+      mpt_id(mpt_id),
+      slot_mapping(slot_mapping)
     {}
 
     ExecResult run(
@@ -1280,7 +1284,6 @@ namespace eevm
       hash_state.addr = hash;
       hash_state.var_type = (size == 64 ? VarType::kMapping : VarType::kArray);
       hash_states[hash] = hash_state;
-      //ctxt->st.set_hash_state_kv(mpt_id, hash_state);
     }
 
     void return_()
@@ -1441,8 +1444,9 @@ namespace eevm
     const vector<uint8_t>& input,
     const uint256_t& call_value,
     const std::string& mpt_id,
+    const std::map<int, std::string>& slot_mapping,
     Trace* tr)
   {
-    return _Processor(gs, tx, tr, mpt_id).run(caller, callee, input, call_value);
+    return _Processor(gs, tx, tr, mpt_id, slot_mapping).run(caller, callee, input, call_value);
   }
 } // namespace eevm
